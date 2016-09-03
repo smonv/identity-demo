@@ -1,0 +1,13 @@
+package: github.com/tthanh/identity-demo
+import:
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: github.com/ory-am/hydra
+  subpackages:
+  - client
+  - sdk
+- package: google.golang.org/grpc
+- package: golang.org/x/net
+  subpackages:
+  - context

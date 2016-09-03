@@ -1,0 +1,45 @@
+go test sudo: required
+
+services:
+  - docker
+
+env:
+  - DOCKER_BIND_LOCALHOST=true GO15VENDOREXPERIMENT=1
+
+language: go
+
+go:
+  - 1.5
+  - 1.6
+  - 1.7
+
+install:
+  - go get github.com/mattn/goveralls golang.org/x/tools/cmd/cover github.com/pierrre/gotestcover github.com/Masterminds/glide github.com/mitchellh/gox github.com/tcnksm/ghr
+  - git clone https://github.com/docker-library/official-images.git ~/official-images
+  - glide install
+  - go install github.com/ory-am/hydra
+
+script:
+  - gotestcover -coverprofile="cover.out" $(glide novendor)
+  - go test -race $(go list ./... | grep -v /vendor | grep -v /cmd)
+  - go test -v -bench=.* -run=none $(glide novendor)
+  - goveralls -coverprofile="cover.out"
+  - docker build -t hydra-travis-ci .
+  - docker run -d hydra-travis-ci
+  - $GOPATH/bin/hydra host --dangerous-auto-logon &
+  - while ! echo exit | nc localhost 4444; do sleep 1; done
+  - $GOPATH/bin/hydra token client --skip-tls-verify
+
+after_success:
+  - gox -ldflags "-X main.Version=`git describe --tags` -X main.BuildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X main.GitHash=`git rev-parse HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
+  # - ghr --username arekkas --token $GITHUB_TOKEN --replace --prerelease --debug pre-release dist/
+
+deploy:
+  provider: releases
+  file_glob: true
+  api_key: "$GITHUB_TOKEN"
+  file: "dist/*"
+  skip_cleanup: true
+  on:
+    tags: true
+    go: 1.7
