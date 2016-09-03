@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package identity;
+
+service Identity {
+  rpc Register (RegisterRequest) returns (RegisterResponse) {}
+}
+
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message RegisterResponse {
+  string id = 1;
+  string username = 2;
+}
